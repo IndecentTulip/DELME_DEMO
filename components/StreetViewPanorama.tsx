@@ -250,7 +250,7 @@ export default function PropertyMapViewer() {
               <div className="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
                 <h3 className="font-semibold text-yellow-800 mb-2">📊 Quota Exceeded</h3>
                 <p className="text-yellow-700 text-sm mb-2">
-                  You've exceeded your Google Maps API usage limits.
+                  You&apos;ve exceeded your Google Maps API usage limits.
                 </p>
                 <a 
                   href="https://console.cloud.google.com/apis/api/maps-backend.googleapis.com/quotas" 
