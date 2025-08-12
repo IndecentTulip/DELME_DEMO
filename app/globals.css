@@ -24,3 +24,38 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+/* Fix Google Maps color inversion issues */
+.gm-style,
+.gm-style *,
+.gm-style-pbc,
+.gm-style-pbc *,
+.gm-style div,
+.gm-style img {
+  filter: none !important;
+  -webkit-filter: none !important;
+}
+
+/* Ensure Street View panorama has correct colors */
+[data-testid="street-view-panorama"],
+[data-testid="street-view-panorama"] *,
+.gm-sv-canvas,
+.gm-sv-canvas * {
+  filter: none !important;
+  -webkit-filter: none !important;
+  color-scheme: light !important;
+}
+
+/* Override any dark mode effects on Google Maps */
+@media (prefers-color-scheme: dark) {
+  .gm-style,
+  .gm-style *,
+  .gm-style-pbc,
+  .gm-style-pbc *,
+  [data-testid="street-view-panorama"],
+  [data-testid="street-view-panorama"] * {
+    filter: none !important;
+    -webkit-filter: none !important;
+    color-scheme: light !important;
+  }
+}
