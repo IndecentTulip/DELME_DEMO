@@ -86,10 +86,12 @@ const properties: Property[] = [
 const libraries: ('geometry')[] = ['geometry'];
 
 export default function PropertyMapViewer() {
-  const [selectedProperty, setSelectedProperty] = useState<Property | null>(properties[0]);
+  const [selectedProperty, setSelectedProperty] = useState<Property | null>(null);
   const [selectedMarkerId, setSelectedMarkerId] = useState<string | null>(null);
   const [, setMap] = useState<google.maps.Map | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [isPanelOpen, setIsPanelOpen] = useState(false);
+  const [showStreetView, setShowStreetView] = useState(false);
 
   const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
   
@@ -167,6 +169,8 @@ export default function PropertyMapViewer() {
   const handleMarkerClick = useCallback((property: Property) => {
     setSelectedProperty(property);
     setSelectedMarkerId(property.id);
+    setIsPanelOpen(true);
+    setShowStreetView(false);
   }, []);
 
   // Handle map load
@@ -310,16 +314,16 @@ export default function PropertyMapViewer() {
   }
 
   return (
-    <div className="h-screen flex flex-col">
+    <div className="h-screen flex flex-col relative">
       {/* Header */}
-      <div className="bg-white shadow-sm border-b px-6 py-4">
-        <h1 className="text-2xl font-bold text-gray-800">Interactive Property Map</h1>
-        <p className="text-gray-600">Click on any property marker to view its 360° Street View</p>
+      <div className="bg-white shadow-sm border-b px-4 py-3 md:px-6 md:py-4">
+        <h1 className="text-lg md:text-2xl font-bold text-gray-800">Interactive Property Map</h1>
+        <p className="text-sm md:text-base text-gray-600 hidden md:block">Click on any property marker to view its 360° Street View</p>
       </div>
 
       {/* Main content area */}
-      <div className="flex-1 flex">
-        {/* Left side - Interactive Map */}
+      <div className="flex-1 flex relative">
+        {/* Map - full screen on mobile, left side on desktop */}
         <div className="flex-1 relative">
           <GoogleMap
             mapContainerStyle={{ width: "100%", height: "100%" }}
@@ -331,6 +335,7 @@ export default function PropertyMapViewer() {
               mapTypeControl: true,
               fullscreenControl: false,
               zoomControl: true,
+              gestureHandling: 'greedy',
               styles: [
                 {
                   featureType: "poi",
@@ -352,7 +357,7 @@ export default function PropertyMapViewer() {
                   fillOpacity: selectedProperty?.id === property.id ? 1 : 0.8,
                   strokeColor: '#FFFFFF',
                   strokeWeight: selectedProperty?.id === property.id ? 3 : 2,
-                  scale: selectedProperty?.id === property.id ? 12 : 10,
+                  scale: selectedProperty?.id === property.id ? 14 : 12,
                 }}
               />
             ))}
@@ -384,8 +389,8 @@ export default function PropertyMapViewer() {
             )}
           </GoogleMap>
 
-          {/* Property legend */}
-          <div className="absolute top-4 left-4 bg-white rounded-lg shadow-lg p-4 max-w-xs">
+          {/* Property legend - hidden on mobile */}
+          <div className="absolute top-4 left-4 bg-white rounded-lg shadow-lg p-3 md:p-4 max-w-xs hidden md:block">
             <h3 className="font-semibold text-gray-800 mb-2">Property Types</h3>
             <div className="grid grid-cols-2 gap-2 text-xs">
               {Array.from(new Set(properties.map(p => p.type))).map(type => (
@@ -401,8 +406,8 @@ export default function PropertyMapViewer() {
           </div>
         </div>
 
-        {/* Right side - Property details and Street View */}
-        <div className="w-96 bg-white border-l border-gray-200 flex flex-col">
+        {/* Desktop: Right side panel */}
+        <div className="hidden md:flex w-96 bg-white border-l border-gray-200 flex-col">
           {selectedProperty ? (
             <>
               {/* Property details */}
@@ -483,6 +488,109 @@ export default function PropertyMapViewer() {
           )}
         </div>
       </div>
+
+      {/* Mobile: Bottom sheet for property details */}
+      {selectedProperty && (
+        <div className={`md:hidden fixed inset-x-0 bottom-0 bg-white rounded-t-2xl shadow-2xl transition-transform duration-300 ease-out z-20 ${
+          isPanelOpen ? 'translate-y-0' : 'translate-y-full'
+        }`}>
+          {/* Handle bar */}
+          <div 
+            className="p-4 cursor-pointer"
+            onClick={() => setIsPanelOpen(!isPanelOpen)}
+          >
+            <div className="w-12 h-1 bg-gray-300 rounded-full mx-auto"></div>
+          </div>
+          
+          {/* Content */}
+          <div className="max-h-[70vh] overflow-y-auto">
+            {/* Property details */}
+            <div className="px-6 pb-safe">
+              <h2 className="text-lg font-bold text-gray-800 mb-2">{selectedProperty.name}</h2>
+              <p className="text-sm text-gray-600 mb-2">{selectedProperty.address}</p>
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-xl font-bold text-green-600">{selectedProperty.price}</span>
+                <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm">
+                  {selectedProperty.type}
+                </span>
+              </div>
+              
+              {/* Property stats */}
+              <div className="grid grid-cols-3 gap-3 mb-3">
+                {selectedProperty.bedrooms && (
+                  <div className="text-center">
+                    <div className="text-lg font-semibold text-gray-800">{selectedProperty.bedrooms}</div>
+                    <div className="text-xs text-gray-600">Bedrooms</div>
+                  </div>
+                )}
+                {selectedProperty.bathrooms && (
+                  <div className="text-center">
+                    <div className="text-lg font-semibold text-gray-800">{selectedProperty.bathrooms}</div>
+                    <div className="text-xs text-gray-600">Bathrooms</div>
+                  </div>
+                )}
+                {selectedProperty.sqft && (
+                  <div className="text-center">
+                    <div className="text-lg font-semibold text-gray-800">{selectedProperty.sqft.toLocaleString()}</div>
+                    <div className="text-xs text-gray-600">Sq Ft</div>
+                  </div>
+                )}
+              </div>
+              
+              <p className="text-sm text-gray-700 mb-4">{selectedProperty.description}</p>
+              
+              {/* Street View Button */}
+              <button
+                onClick={() => setShowStreetView(true)}
+                className="w-full py-3 bg-blue-500 text-white rounded-lg font-semibold hover:bg-blue-600 transition-colors"
+              >
+                View 360° Street View
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Mobile: Full screen Street View modal */}
+      {showStreetView && selectedProperty && (
+        <div className="md:hidden fixed inset-0 bg-black z-30">
+          <div className="absolute top-4 left-4 right-4 flex justify-between items-center z-40">
+            <div className="bg-black bg-opacity-50 text-white px-3 py-2 rounded">
+              360° Street View
+            </div>
+            <button
+              onClick={() => setShowStreetView(false)}
+              className="bg-black bg-opacity-50 text-white p-2 rounded-full hover:bg-opacity-70 transition-colors"
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+          <GoogleMap
+            mapContainerStyle={{ width: "100%", height: "100%" }}
+            center={{ lat: selectedProperty.lat, lng: selectedProperty.lng }}
+            zoom={18}
+            options={{
+              disableDefaultUI: true,
+            }}
+          >
+            <StreetViewPanoramaComponent
+              options={{
+                position: { lat: selectedProperty.lat, lng: selectedProperty.lng },
+                pov: { heading: 0, pitch: 0 },
+                zoom: 1,
+                addressControl: false,
+                linksControl: true,
+                panControl: true,
+                enableCloseButton: false,
+                fullscreenControl: false,
+                visible: true,
+              }}
+            />
+          </GoogleMap>
+        </div>
+      )}
     </div>
   );
 }
